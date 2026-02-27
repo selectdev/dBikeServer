@@ -1,0 +1,13 @@
+// ping.tengo – overrides the built-in Go ping handler.
+//
+// Available variables:
+//   topic   string  – "ping"
+//   payload map     – e.g. {sequence: 0}
+//
+// Available function:
+//   notify(topic, payload_map)  – sends a BLE notification back to the central
+
+notify("pong", {
+    source:   "tengo",
+    sequence: payload.sequence
+})
