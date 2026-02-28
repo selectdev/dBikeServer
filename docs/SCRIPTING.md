@@ -23,6 +23,7 @@ Scripts run synchronously within the BLE handler goroutine. Keep them fast. Use 
 - [Built-ins: Encoding](#built-ins-encoding)
 - [Built-ins: State](#built-ins-state)
 - [Built-ins: Database](#built-ins-database)
+- [Built-ins: GPIO](#built-ins-gpio)
 - [Examples](#examples)
 
 ---
@@ -520,6 +521,126 @@ config_set("device.wheel_mm", "2096")
 name     := config_get("device.name")       // "My Bike"
 wheel_mm := int(config_get("device.wheel_mm") || "2096")
 ```
+
+---
+
+## Built-ins: GPIO
+
+GPIO access is available on Linux platforms with `/dev/gpiomem` (e.g. Raspberry Pi). On unsupported platforms all `gpio_*` calls return an error — scripts continue running, so guard with `throttle` or a config flag if you need to run the same script on both Pi and a dev machine.
+
+Pin numbers are **BCM GPIO numbers** (the numbering used by the Broadcom SoC, not the physical header pin numbers).
+
+### Pin direction
+
+#### `gpio_input(pin)`
+
+Configure `pin` as a digital input. Call this before `gpio_read`.
+
+#### `gpio_output(pin)`
+
+Configure `pin` as a digital output. Call this before `gpio_high`, `gpio_low`, or `gpio_toggle`.
+
+### Digital output
+
+#### `gpio_high(pin)`
+
+Drive `pin` high (3.3 V).
+
+#### `gpio_low(pin)`
+
+Drive `pin` low (0 V).
+
+#### `gpio_toggle(pin)`
+
+Flip `pin` between high and low.
+
+### Digital input
+
+#### `gpio_read(pin) → int`
+
+Read the current level of `pin`. Returns `1` if high, `0` if low.
+
+```tengo
+gpio_input(17)
+level := gpio_read(17)
+if level == 1 {
+    log("button pressed")
+}
+```
+
+### Pull resistors
+
+| Function | Description |
+|---|---|
+| `gpio_pull_up(pin)` | Enable the internal pull-up resistor on `pin` |
+| `gpio_pull_down(pin)` | Enable the internal pull-down resistor on `pin` |
+| `gpio_pull_off(pin)` | Disable the internal pull resistor (floating) |
+
+```tengo
+// Input with pull-up — reads 0 when button connects pin to GND
+gpio_input(17)
+gpio_pull_up(17)
+```
+
+### PWM
+
+The Raspberry Pi hardware PWM is available on GPIO 12, 13, 18, and 19. Software PWM is not currently supported through these builtins.
+
+#### `gpio_pwm(pin)`
+
+Switch `pin` into PWM mode. Must be called before `gpio_pwm_freq` and `gpio_pwm_duty`.
+
+#### `gpio_pwm_freq(pin, freq_hz)`
+
+Set the PWM clock frequency for `pin` in Hz. This sets the overall clock, not the period — the effective frequency seen on the pin depends on the duty cycle settings passed to `gpio_pwm_duty`.
+
+#### `gpio_pwm_duty(pin, duty, cycle)`
+
+Set the duty cycle. `duty` is the number of clock ticks the signal is high per `cycle` ticks total. For example, `gpio_pwm_duty(18, 64, 256)` is a 25% duty cycle.
+
+```tengo
+// 50% duty cycle on GPIO 18 at 1 kHz
+gpio_pwm(18)
+gpio_pwm_freq(18, 1000)
+gpio_pwm_duty(18, 512, 1024)
+```
+
+### Edge detection
+
+Edge detection lets a script poll for pin state changes without busy-waiting on `gpio_read`.
+
+#### `gpio_detect(pin, edge)`
+
+Enable edge detection on `pin`. `edge` must be one of:
+
+| Value | Triggers on |
+|---|---|
+| `"rise"` | Low → High transition |
+| `"fall"` | High → Low transition |
+| `"any"` | Either transition |
+
+#### `gpio_edge(pin) → bool`
+
+Returns `true` if an edge has been detected on `pin` since the last call to `gpio_edge` for that pin. The flag is cleared on read.
+
+#### `gpio_stop_detect(pin)`
+
+Disable edge detection on `pin`.
+
+```tengo
+// Detect a button press (falling edge, button pulls pin to GND)
+gpio_input(23)
+gpio_pull_up(23)
+gpio_detect(23, "fall")
+
+// In a periodic script invocation:
+if gpio_edge(23) {
+    log("button pressed on GPIO 23")
+    notify("button", {pin: 23, ts: now_ms()})
+}
+```
+
+> **Note:** `gpio_edge` only checks whether an edge occurred — it does not block. Call it from a script that is invoked regularly (e.g. via a timed IPC topic) to react to hardware events.
 
 ---
 
