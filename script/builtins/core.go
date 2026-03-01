@@ -105,3 +105,31 @@ func jsonDecodeFunc() *tengo.UserFunction {
 		},
 	}
 }
+
+func formatDurationFunc() *tengo.UserFunction {
+	return &tengo.UserFunction{
+		Name: "format_duration",
+		Value: func(args ...tengo.Object) (tengo.Object, error) {
+			if len(args) != 1 {
+				return tengo.UndefinedValue, fmt.Errorf("format_duration: expected 1 argument (ms)")
+			}
+			ms, ok := toFloat64(args[0])
+			if !ok {
+				return tengo.UndefinedValue, fmt.Errorf("format_duration: argument must be a number")
+			}
+			total := int64(ms) / 1000
+			h := total / 3600
+			m := (total % 3600) / 60
+			s := total % 60
+			var result string
+			if h > 0 {
+				result = fmt.Sprintf("%dh%02dm%02ds", h, m, s)
+			} else if m > 0 {
+				result = fmt.Sprintf("%dm%02ds", m, s)
+			} else {
+				result = fmt.Sprintf("%ds", s)
+			}
+			return &tengo.String{Value: result}, nil
+		},
+	}
+}

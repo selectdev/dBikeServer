@@ -87,17 +87,11 @@ func (e *Engine) compile(topic string, src []byte) (*tengo.Compiled, error) {
 	if err := s.Add("notify", e.notifyFunc()); err != nil {
 		return nil, err
 	}
-	if err := s.Add("get_state", e.getStateFunc()); err != nil {
-		return nil, err
-	}
-	if err := s.Add("set_state", e.setStateFunc()); err != nil {
-		return nil, err
-	}
-	if err := s.Add("del_state", e.delStateFunc()); err != nil {
-		return nil, err
-	}
-	if err := s.Add("throttle", e.throttleFunc()); err != nil {
-		return nil, err
+
+	for _, fn := range builtins.StateFuncs(e.state, &e.stateMu, e.db) {
+		if err := s.Add(fn.Name, fn); err != nil {
+			return nil, err
+		}
 	}
 
 	for _, fn := range builtins.DBFuncs(e.db) {

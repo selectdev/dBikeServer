@@ -381,3 +381,50 @@ func randFloatFunc() *tengo.UserFunction {
 		},
 	}
 }
+
+func deadBandFunc() *tengo.UserFunction {
+	return &tengo.UserFunction{
+		Name: "dead_band",
+		Value: func(args ...tengo.Object) (tengo.Object, error) {
+			if len(args) != 2 {
+				return tengo.UndefinedValue, fmt.Errorf("dead_band: expected 2 arguments (val, threshold)")
+			}
+			val, ok1 := toFloat64(args[0])
+			threshold, ok2 := toFloat64(args[1])
+			if !ok1 || !ok2 {
+				return tengo.UndefinedValue, fmt.Errorf("dead_band: arguments must be numbers")
+			}
+			if math.Abs(val) < threshold {
+				return &tengo.Float{Value: 0}, nil
+			}
+			return &tengo.Float{Value: val}, nil
+		},
+	}
+}
+
+func haversineFunc() *tengo.UserFunction {
+	return &tengo.UserFunction{
+		Name: "haversine",
+		Value: func(args ...tengo.Object) (tengo.Object, error) {
+			if len(args) != 4 {
+				return tengo.UndefinedValue, fmt.Errorf("haversine: expected 4 arguments (lat1, lon1, lat2, lon2)")
+			}
+			lat1, ok1 := toFloat64(args[0])
+			lon1, ok2 := toFloat64(args[1])
+			lat2, ok3 := toFloat64(args[2])
+			lon2, ok4 := toFloat64(args[3])
+			if !ok1 || !ok2 || !ok3 || !ok4 {
+				return tengo.UndefinedValue, fmt.Errorf("haversine: all arguments must be numbers")
+			}
+			const R = 6371000.0
+			phi1 := lat1 * math.Pi / 180
+			phi2 := lat2 * math.Pi / 180
+			dPhi := (lat2 - lat1) * math.Pi / 180
+			dLam := (lon2 - lon1) * math.Pi / 180
+			a := math.Sin(dPhi/2)*math.Sin(dPhi/2) +
+				math.Cos(phi1)*math.Cos(phi2)*math.Sin(dLam/2)*math.Sin(dLam/2)
+			c := 2 * math.Atan2(math.Sqrt(a), math.Sqrt(1-a))
+			return &tengo.Float{Value: R * c}, nil
+		},
+	}
+}

@@ -22,6 +22,7 @@ Scripts run synchronously within the BLE handler goroutine. Keep them fast. Use 
 - [Built-ins: Type predicates](#built-ins-type-predicates)
 - [Built-ins: Encoding](#built-ins-encoding)
 - [Built-ins: State](#built-ins-state)
+- [Built-ins: Signal processing](#built-ins-signal-processing)
 - [Built-ins: Database](#built-ins-database)
 - [Built-ins: GPIO](#built-ins-gpio)
 - [Examples](#examples)
@@ -160,6 +161,21 @@ if time_since_ms(last) > 5000 {
 set_state("last_seen", now_ms())
 ```
 
+### `format_duration(ms) → string`
+
+Format a millisecond duration as a compact human-readable string. Hours are omitted when zero; leading zeros are added to minutes and seconds when a higher unit is present.
+
+| Input | Output |
+|---|---|
+| `45000` | `"45s"` |
+| `90000` | `"1m30s"` |
+| `3723000` | `"1h02m03s"` |
+
+```tengo
+elapsed := time_since_ms(get_state("ride.start") || now_ms())
+notify("ride_time", {display: format_duration(elapsed)})
+```
+
 ---
 
 ## Built-ins: Formatting & JSON
@@ -253,6 +269,21 @@ set_state("smooth", smooth)
 |---|---|
 | `PI` | `3.141592653589793` |
 | `E` | `2.718281828459045` |
+
+### Sensor helpers
+
+| Function | Signature | Description |
+|---|---|---|
+| `dead_band(val, threshold)` | `→ float` | Returns `0.0` if `abs(val) < threshold`, otherwise returns `val`. Filters noise around zero. |
+| `haversine(lat1, lon1, lat2, lon2)` | `→ float` | Great-circle distance in **metres** between two GPS coordinates (decimal degrees). |
+
+```tengo
+// Ignore cadence jitter below 3 RPM
+clean_rpm := dead_band(float(payload.rpm), 3.0)
+
+// Distance between two GPS fixes
+dist_m := haversine(51.5074, -0.1278, 51.5080, -0.1270)
+```
 
 ---
 
@@ -436,6 +467,58 @@ Rate-limiter. Returns `true` the first time it is called for `key`, then returns
 if throttle("speed.notify", 500) {
     notify("speed", {value: payload.speed})
 }
+```
+
+### `debounce(key, delay_ms) → bool`
+
+Returns `true` only when the gap between calls is **at least** `delay_ms` milliseconds — i.e. the signal has been quiet. Returns `false` on the very first call and whenever calls arrive faster than `delay_ms`. Uses the state store internally (`__debounce.<key>`).
+
+This is the complement of `throttle`: throttle fires on the leading edge, debounce fires on the trailing edge (after silence).
+
+```tengo
+// Detect a button release only after 50ms of no further triggers
+gpio_input(23)
+gpio_detect(23, "fall")
+if gpio_edge(23) {
+    if debounce("btn.23", 50) {
+        notify("button", {pin: 23})
+    }
+}
+```
+
+---
+
+## Built-ins: Signal processing
+
+These functions are stateful — they store internal state under a namespaced key so each sensor or control loop gets its own history. Keys are prefixed with `__` and are not persisted to the database.
+
+### `ewma(key, val, alpha) → float`
+
+Exponential weighted moving average. On the first call the raw `val` is returned as-is; subsequent calls blend the new sample with the running average using `alpha * val + (1 - alpha) * prev`. A smaller `alpha` gives a smoother but slower-responding signal.
+
+| `alpha` | Character |
+|---|---|
+| `0.05` | Very smooth — slow to respond |
+| `0.1` | Smooth — good for cadence / speed |
+| `0.3` | Moderate |
+| `0.5` | Fast — follows signal closely |
+
+```tengo
+smooth_rpm := ewma("cadence.smooth", float(payload.rpm), 0.1)
+notify("cadence", {rpm: round(smooth_rpm)})
+```
+
+### `pid_update(key, setpoint, measured, kp, ki, kd) → float`
+
+Discrete PID controller. Returns the control output for one time step. `key` is used to store the integrator and previous error between calls — use a unique key per control loop. Gains (`kp`, `ki`, `kd`) must be tuned for your plant and call rate.
+
+```tengo
+// Closed-loop speed assist: target 25 km/h, control PWM duty
+target  := 25.0
+current := is_float(payload.speed) ? payload.speed : 0.0
+duty    := pid_update("speed.pid", target, current, 0.8, 0.05, 0.1)
+duty     = clamp(duty, 0, 100)
+gpio_pwm_duty(18, int(duty), 100)
 ```
 
 ---

@@ -79,6 +79,9 @@ func All() []*tengo.UserFunction {
 		hexDecodeFunc(),
 		base64EncodeFunc(),
 		base64DecodeFunc(),
+		deadBandFunc(),
+		haversineFunc(),
+		formatDurationFunc(),
 	}
 }
 
