@@ -1,8 +1,8 @@
 # dBike Script Engine
 
-Scripts are [Tengo](https://github.com/d5/tengo) files placed in this directory. Each file is compiled once at startup and executed on demand. The filename determines which IPC topic it handles — `ping.tengo` runs whenever a frame arrives with `topic: "ping"`.
+_For general architecture and package documentation see [README.md](README.md)._  
 
-Scripts run synchronously within the BLE handler goroutine. Keep them fast. Use `throttle()` to drop excess invocations.
+Scripts are [Tengo](https://github.com/d5/tengo) files placed in this directory. Each file is compiled once at startup and executed on demand. The filename determines which IPC topic it handles — `ping.tengo` runs whenever a frame arrives with `topic: "ping"`. Scripts run synchronously within the BLE handler goroutine. Keep them fast. Use `throttle()` to drop excess invocations.
 
 ---
 
@@ -25,6 +25,7 @@ Scripts run synchronously within the BLE handler goroutine. Keep them fast. Use 
 - [Built-ins: Signal processing](#built-ins-signal-processing)
 - [Built-ins: Database](#built-ins-database)
 - [Built-ins: GPIO](#built-ins-gpio)
+- [Built-ins: OpenAI](#built-ins-openai)
 - [Examples](#examples)
 
 ---
@@ -45,26 +46,26 @@ Scripts run synchronously within the BLE handler goroutine. Keep them fast. Use 
 Tengo is a statically-typed, dynamically-dispatched scripting language with Go-like syntax. Key differences from Go:
 
 ```tengo
-// Declaration — use :=
+
 x := 10
 name := "hello"
 
-// Assignment — use =
+
 x = 20
 
-// No trailing commas in maps or arrays
-m := {a: 1, b: 2}   // ok
-m := {a: 1, b: 2,}  // PARSE ERROR
 
-// Undefined / default values
-val := get_state("key") || 0   // use || for defaults
+m := {a: 1, b: 2}   
+m := {a: 1, b: 2,}  
 
-// String conversion
-s := string(42)      // "42"
-n := int("42")       // 42
-f := float("3.14")   // 3.14
 
-// Built-in iteration
+val := get_state("key") || 0   
+
+
+s := string(42)      
+n := int("42")       
+f := float("3.14")   
+
+
 for i, v in [1, 2, 3] {
     log(i, v)
 }
@@ -72,12 +73,12 @@ for k, v in {a: 1, b: 2} {
     log(k, v)
 }
 
-// Closures (no captures from outer scope in Tengo — use state or pass args)
+
 double := func(x) { return x * 2 }
-log(double(5))  // 10
+log(double(5))  
 ```
 
-Full Tengo language reference: https://github.com/d5/tengo/blob/master/docs/tutorial.md
+Full Tengo language reference: https:
 
 ---
 
@@ -104,14 +105,14 @@ label := is_string(payload.label) ? payload.label : "unknown"
 All Tengo stdlib modules are available via `import`. These are the most useful ones:
 
 ```tengo
-text   := import("text")    // regexp, string ops
-times  := import("times")   // time parsing and formatting
-math   := import("math")    // (prefer the built-in math functions instead)
-rand   := import("rand")    // (prefer rand_int / rand_float instead)
-json   := import("json")    // (prefer json_encode / json_decode instead)
+text   := import("text")    
+times  := import("times")   
+math   := import("math")    
+rand   := import("rand")    
+json   := import("json")    
 ```
 
-Full stdlib reference: https://github.com/d5/tengo/blob/master/docs/stdlib.md
+Full stdlib reference: https:
 
 ---
 
@@ -145,7 +146,7 @@ Current Unix timestamp in milliseconds.
 
 ```tengo
 start := now_ms()
-// ... do work ...
+
 log("elapsed:", now_ms() - start, "ms")
 ```
 
@@ -195,7 +196,7 @@ Serialize any Tengo value to a JSON string. Maps, arrays, strings, numbers, and 
 
 ```tengo
 raw := json_encode({ts: now_ms(), rpm: payload.rpm, flags: [1, 2, 3]})
-// raw == '{"flags":[1,2,3],"rpm":95,"ts":1700000000000}'
+
 ```
 
 ### `json_decode(str) → any`
@@ -204,8 +205,8 @@ Parse a JSON string back into a Tengo map or array.
 
 ```tengo
 data := json_decode('{"speed": 28.5, "unit": "km/h"}')
-log(data.speed)   // 28.5
-log(data.unit)    // "km/h"
+log(data.speed)   
+log(data.unit)    
 ```
 
 ---
@@ -233,10 +234,10 @@ log(data.unit)    // "km/h"
 | `map_range(val, in_min, in_max, out_min, out_max)` | `→ float` | Remap `val` from one range to another |
 
 ```tengo
-// Map sensor 0-1023 to 0-100%
+
 pct := map_range(payload.raw, 0, 1023, 0, 100)
 
-// Smooth a noisy signal with exponential smoothing
+
 prev  := get_state("smooth") || float(payload.value)
 smooth := lerp(prev, float(payload.value), 0.1)
 set_state("smooth", smooth)
@@ -278,10 +279,10 @@ set_state("smooth", smooth)
 | `haversine(lat1, lon1, lat2, lon2)` | `→ float` | Great-circle distance in **metres** between two GPS coordinates (decimal degrees). |
 
 ```tengo
-// Ignore cadence jitter below 3 RPM
+
 clean_rpm := dead_band(float(payload.rpm), 3.0)
 
-// Distance between two GPS fixes
+
 dist_m := haversine(51.5074, -0.1278, 51.5080, -0.1270)
 ```
 
@@ -307,7 +308,7 @@ All array functions return new arrays — the originals are not modified.
 | `reverse(arr)` | `→ array` | Reversed copy |
 
 ```tengo
-// Maintain a sliding window of the last 10 readings
+
 samples := get_state("samples") || []
 samples  = append(samples, payload.value)
 if len(samples) > 10 {
@@ -338,11 +339,11 @@ notify("stats", {
 | `pairs_to_map(arr)` | `→ map` | Convert `[[key, val], …]` back to a map |
 
 ```tengo
-// Forward only safe fields
+
 safe := omit(payload, "auth_token", "secret")
 notify("forwarded", merge(safe, {ts: now_ms(), source: "script"}))
 
-// Check for optional fields before using them
+
 if has_key(payload, "metadata") {
     log("metadata keys:", keys(payload.metadata))
 }
@@ -369,14 +370,14 @@ if has_key(payload, "metadata") {
 | `pad_right(str, width, pad)` | `→ string` | Right-pad `str` to `width` using `pad` character |
 
 ```tengo
-// Zero-padded display value
-display := pad_left(string(payload.rpm), 4, "0")  // "0095"
 
-// Parse a CSV row
+display := pad_left(string(payload.rpm), 4, "0")  
+
+
 parts := split(payload.row, ",")
 speed := float(trim(parts[2]))
 
-// Build a structured topic name
+
 t := join(["sensor", payload.device_id, "speed"], ".")
 notify(t, {value: speed})
 ```
@@ -399,12 +400,12 @@ Use these to guard against unexpected payload shapes before operating on values.
 | `is_undefined(x)` | `x` is undefined (missing field, uninitialised variable) |
 
 ```tengo
-// Safely coerce payload fields
+
 rpm   := is_int(payload.rpm)   ? payload.rpm   : 0
 speed := is_float(payload.spd) ? payload.spd   : 0.0
 label := is_string(payload.id) ? payload.id    : "unknown"
 
-// Guard against missing nested fields
+
 if !is_map(payload.meta) {
     notify("error", {reason: "missing meta field"})
     return
@@ -423,13 +424,13 @@ if !is_map(payload.meta) {
 | `base64_decode(str)` | `→ bytes` | Decode a base64 string to bytes |
 
 ```tengo
-// Decode a binary frame sent as hex
-raw   := hex_decode(payload.frame)     // bytes
-again := hex_encode(raw)               // back to hex string
 
-// Round-trip through base64
+raw   := hex_decode(payload.frame)     
+again := hex_encode(raw)               
+
+
 enc := base64_encode("hello, world")
-dec := string(base64_decode(enc))      // "hello, world"
+dec := string(base64_decode(enc))      
 ```
 
 ---
@@ -463,7 +464,7 @@ Delete a key from both the in-memory store and the database.
 Rate-limiter. Returns `true` the first time it is called for `key`, then returns `false` until `delay_ms` milliseconds have elapsed. Uses the state store internally (`__throttle.<key>`).
 
 ```tengo
-// Emit at most once every 500ms regardless of how often data arrives
+
 if throttle("speed.notify", 500) {
     notify("speed", {value: payload.speed})
 }
@@ -476,7 +477,7 @@ Returns `true` only when the gap between calls is **at least** `delay_ms` millis
 This is the complement of `throttle`: throttle fires on the leading edge, debounce fires on the trailing edge (after silence).
 
 ```tengo
-// Detect a button release only after 50ms of no further triggers
+
 gpio_input(23)
 gpio_detect(23, "fall")
 if gpio_edge(23) {
@@ -513,7 +514,7 @@ notify("cadence", {rpm: round(smooth_rpm)})
 Discrete PID controller. Returns the control output for one time step. `key` is used to store the integrator and previous error between calls — use a unique key per control loop. Gains (`kp`, `ki`, `kd`) must be tuned for your plant and call rate.
 
 ```tengo
-// Closed-loop speed assist: target 25 km/h, control PWM duty
+
 target  := 25.0
 current := is_float(payload.speed) ? payload.speed : 0.0
 duty    := pid_update("speed.pid", target, current, 0.8, 0.05, 0.1)
@@ -525,7 +526,7 @@ gpio_pwm_duty(18, int(duty), 100)
 
 ## Built-ins: Database
 
-A persistent key-value store backed by [BadgerDB](https://github.com/dgraph-io/badger). Unlike `set_state`, the database is designed for **larger or structured data** that you want to query and log over time. It is organised into three namespaces:
+A persistent key-value store backed by [BadgerDB](https:
 
 | Namespace | Functions | Purpose |
 |---|---|---|
@@ -558,12 +559,12 @@ db_set("bike.odometer", 12345.6)
 db_set("bike.firmware", "v1.2.3")
 db_set("ride.config", {unit: "km", display: "cadence"})
 
-odo  := db_get("bike.odometer")   // 12345.6
-cfg  := db_get("ride.config")     // {unit: "km", display: "cadence"}
-miss := db_get("nonexistent")     // undefined
+odo  := db_get("bike.odometer")   
+cfg  := db_get("ride.config")     
+miss := db_get("nonexistent")     
 
-all_keys  := db_keys()          // ["bike.firmware", "bike.odometer", "ride.config"]
-bike_keys := db_keys("bike.")   // ["bike.firmware", "bike.odometer"]
+all_keys  := db_keys()          
+bike_keys := db_keys("bike.")   
 ```
 
 ### Time-series log
@@ -577,10 +578,10 @@ Append a log entry for `topic`. Entries are stored with a nanosecond-precision t
 Retrieve the most recent log entries for `topic`, newest first. `limit` defaults to `100`. Each element is the raw `data` value that was passed to `db_log`.
 
 ```tengo
-// Log every incoming data point
+
 db_log("cadence", {rpm: payload.rpm, ts: now_ms()})
 
-// Read the last 5 cadence entries
+
 entries := db_logs("cadence", 5)
 for i, e in entries {
     log(i, "rpm:", e.rpm, "at", e.ts)
@@ -596,12 +597,12 @@ Config is stored as plain strings. It is intended for device-level settings that
 #### `config_del(key)`
 
 ```tengo
-// Write once (e.g. during a "setup" topic handler)
+
 config_set("device.name", "My Bike")
 config_set("device.wheel_mm", "2096")
 
-// Read anywhere
-name     := config_get("device.name")       // "My Bike"
+
+name     := config_get("device.name")       
 wheel_mm := int(config_get("device.wheel_mm") || "2096")
 ```
 
@@ -660,7 +661,7 @@ if level == 1 {
 | `gpio_pull_off(pin)` | Disable the internal pull resistor (floating) |
 
 ```tengo
-// Input with pull-up — reads 0 when button connects pin to GND
+
 gpio_input(17)
 gpio_pull_up(17)
 ```
@@ -682,7 +683,7 @@ Set the PWM clock frequency for `pin` in Hz. This sets the overall clock, not th
 Set the duty cycle. `duty` is the number of clock ticks the signal is high per `cycle` ticks total. For example, `gpio_pwm_duty(18, 64, 256)` is a 25% duty cycle.
 
 ```tengo
-// 50% duty cycle on GPIO 18 at 1 kHz
+
 gpio_pwm(18)
 gpio_pwm_freq(18, 1000)
 gpio_pwm_duty(18, 512, 1024)
@@ -711,12 +712,12 @@ Returns `true` if an edge has been detected on `pin` since the last call to `gpi
 Disable edge detection on `pin`.
 
 ```tengo
-// Detect a button press (falling edge, button pulls pin to GND)
+
 gpio_input(23)
 gpio_pull_up(23)
 gpio_detect(23, "fall")
 
-// In a periodic script invocation:
+
 if gpio_edge(23) {
     log("button pressed on GPIO 23")
     notify("button", {pin: 23, ts: now_ms()})
@@ -727,12 +728,83 @@ if gpio_edge(23) {
 
 ---
 
+## Built-ins: OpenAI
+
+These functions call the [OpenAI Chat Completions API](https:
+
+**Prerequisite:** set the `OPENAI_API_KEY` environment variable before starting the server. The SDK picks it up automatically.
+
+```sh
+export OPENAI_API_KEY=sk-...
+./dbikeserver
+```
+
+Each message in the `messages` array is a map with two required string keys:
+
+| Key | Values |
+|---|---|
+| `role` | `"system"`, `"user"`, or `"assistant"` |
+| `content` | The message text |
+
+### `openai_chat(model, messages) → string`
+
+Send a chat completion request and return the reply text. Errors are propagated as script errors and logged.
+
+```tengo
+reply := openai_chat("gpt-4o-mini", [
+    {role: "system", content: "You are a cycling coach. Be concise."},
+    {role: "user",   content: "My cadence is " + string(payload.rpm) + " RPM. Is that good?"}
+])
+notify("coach", {advice: reply})
+```
+
+### `openai_chat_ex(model, messages) → map`
+
+Like `openai_chat` but returns a map with the full response, including token usage:
+
+| Key | Type | Description |
+|---|---|---|
+| `content` | string | Reply text |
+| `finish_reason` | string | Why generation stopped (`"stop"`, `"length"`, etc.) |
+| `prompt_tokens` | int | Tokens consumed by the prompt |
+| `completion_tokens` | int | Tokens in the reply |
+| `total_tokens` | int | Sum of prompt + completion tokens |
+
+```tengo
+res := openai_chat_ex("gpt-4o", [
+    {role: "user", content: "Summarise this ride: " + json_encode(payload)}
+])
+log("tokens used:", res.total_tokens)
+db_log("ai.summary", {text: res.content, tokens: res.total_tokens, ts: now_ms()})
+notify("summary", {text: res.content})
+```
+
+### Example: AI-powered anomaly detection
+
+```tengo
+
+rpm   := is_int(payload.rpm)   ? payload.rpm   : 0
+speed := is_float(payload.spd) ? payload.spd   : 0.0
+
+
+if rpm > 150 || speed > 60.0 {
+    context := sprintf("RPM: %d, Speed: %.1f km/h", rpm, speed)
+    reply := openai_chat("gpt-4o-mini", [
+        {role: "system", content: "You are a bike sensor analyst. Reply in one sentence."},
+        {role: "user",   content: "Is this reading abnormal? " + context}
+    ])
+    notify("anomaly_alert", {reading: context, analysis: reply})
+}
+```
+
+---
+
 ## Examples
 
 ### Ping handler
 
 ```tengo
-// scripts/ping.tengo
+
 count := get_state("ping.count") || 0
 count += 1
 set_state("ping.count", count)
@@ -747,10 +819,10 @@ notify("pong", {
 ### Cadence monitor with rolling average and rate limiting
 
 ```tengo
-// scripts/cadence.tengo
+
 rpm := is_int(payload.rpm) ? payload.rpm : 0
 
-// Keep a rolling window of the last 20 samples
+
 samples := get_state("cadence.samples") || []
 samples  = append(samples, rpm)
 if len(samples) > 20 {
@@ -758,10 +830,10 @@ if len(samples) > 20 {
 }
 set_state("cadence.samples", samples)
 
-// Log every reading to the database
+
 db_log("cadence", {rpm: rpm, ts: now_ms()})
 
-// Notify the central at most once per 250ms
+
 if throttle("cadence.notify", 250) {
     notify("cadence_stats", {
         rpm:    rpm,
@@ -775,17 +847,17 @@ if throttle("cadence.notify", 250) {
 ### Odometer that persists across restarts
 
 ```tengo
-// scripts/speed.tengo
+
 speed_kmh := is_float(payload.speed) ? payload.speed : float(payload.speed || 0)
 
-// Accumulate distance: speed (km/h) * interval (s) = km
+
 last_ts  := get_state("odo.last_ts") || now_ms()
 elapsed_s := float(time_since_ms(last_ts)) / 1000.0
 set_state("odo.last_ts", now_ms())
 
 km_delta := speed_kmh * (elapsed_s / 3600.0)
 
-// db_get/db_set for data that must survive restarts
+
 odo := db_get("bike.odometer") || 0.0
 odo += km_delta
 db_set("bike.odometer", odo)

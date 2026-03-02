@@ -68,7 +68,7 @@ func (d *DB) Delete(key string) error {
 	})
 }
 
-// Scan returns all key-value pairs whose key starts with prefix.
+
 func (d *DB) Scan(prefix string) ([][2][]byte, error) {
 	var results [][2][]byte
 	err := d.bdb.View(func(txn *badger.Txn) error {
@@ -90,7 +90,7 @@ func (d *DB) Scan(prefix string) ([][2][]byte, error) {
 	return results, err
 }
 
-// ScanKeys returns all keys with the given prefix (no values fetched).
+
 func (d *DB) ScanKeys(prefix string) ([]string, error) {
 	var keys []string
 	err := d.bdb.View(func(txn *badger.Txn) error {
@@ -107,7 +107,7 @@ func (d *DB) ScanKeys(prefix string) ([]string, error) {
 	return keys, err
 }
 
-// ScanReverse returns up to limit key-value pairs with the given prefix in reverse (newest first).
+
 func (d *DB) ScanReverse(prefix string, limit int) ([][2][]byte, error) {
 	var results [][2][]byte
 	err := d.bdb.View(func(txn *badger.Txn) error {

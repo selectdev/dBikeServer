@@ -42,7 +42,7 @@ get_boot_time() {
     if [[ "$(uname)" == "Darwin" ]]; then
         # Parse kern.boottime: "{ sec = 1234567890, usec = 0 } Day Mon DD HH:MM:SS YYYY"
         sysctl -n kern.boottime 2>/dev/null \
-            | sed 's/.*} //' \
+            | sed 's/.*} 
             | xargs -I{} date -j -f "%a %b %d %T %Y" "{}" "+%Y-%m-%d %H:%M:%S" 2>/dev/null \
             || date
     elif [[ -f /proc/uptime ]]; then
@@ -58,7 +58,7 @@ get_boot_time() {
 
 get_uptime() {
     if [[ "$(uname)" == "Darwin" ]]; then
-        uptime 2>/dev/null | sed 's/.*up /up /' | sed 's/, [0-9]* user.*//'
+        uptime 2>/dev/null | sed 's/.*up /up /' | sed 's/, [0-9]* user.*
     else
         uptime -p 2>/dev/null || uptime 2>/dev/null | awk -F',' '{print $1}' | sed 's/.*up /up /'
     fi

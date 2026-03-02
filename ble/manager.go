@@ -12,10 +12,10 @@ import (
 	"dbikeserver/util"
 )
 
-// RunBLEManager initialises the CoreBluetooth device, registers the GATT
-// service, and advertises until ctx is cancelled. If advertising stops
-// unexpectedly (e.g. after a client disconnects) it restarts automatically
-// after AdvertisingRecoveryDelay, mirroring the Node.js recovery logic.
+
+
+
+
 func RunBLEManager(ctx context.Context, nc *NotifyCharacteristic, wc *WriteCharacteristic) error {
 	d, err := darwin.NewDevice()
 	if err != nil {
@@ -23,13 +23,13 @@ func RunBLEManager(ctx context.Context, nc *NotifyCharacteristic, wc *WriteChara
 	}
 	ble.SetDefaultDevice(d)
 
-	// Build GATT service.
+	
 	svc := ble.NewService(ble.MustParse(config.ServiceUUID))
 
 	writeCh := ble.NewCharacteristic(ble.MustParse(config.WriteCharUUID))
 	writeCh.HandleWrite(wc.Handler())
-	// Also advertise write-without-response (CharWriteNR) so the iOS app can
-	// use the faster path. The same handler processes both write types.
+	
+	
 	writeCh.Property |= ble.CharWriteNR
 
 	notifyCh := ble.NewCharacteristic(ble.MustParse(config.NotifyCharUUID))
@@ -56,7 +56,7 @@ func RunBLEManager(ctx context.Context, nc *NotifyCharacteristic, wc *WriteChara
 		advErr := ble.AdvertiseNameAndServices(ctx, config.DeviceName, serviceUUID)
 
 		if ctx.Err() != nil {
-			return nil // graceful shutdown via SIGINT/SIGTERM
+			return nil 
 		}
 
 		if advErr != nil {

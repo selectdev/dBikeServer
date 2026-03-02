@@ -12,7 +12,6 @@ import (
 	"dbikeserver/ble"
 	"dbikeserver/config"
 	"dbikeserver/db"
-	dbg "dbikeserver/debug"
 	"dbikeserver/gpio"
 	"dbikeserver/ipc"
 	"dbikeserver/script"
@@ -29,31 +28,15 @@ func cancelOnSignal(cancel context.CancelFunc) {
 	}()
 }
 
-var (
-	flagDebug = flag.Bool("debug", false, "open a native debug console window")
-	flagDB    = flag.String("db", "./data", "path to the BadgerDB data directory")
-)
+var flagDB = flag.String("db", config.DBPath, "path to the BadgerDB data directory (env: DBIKE_DB_PATH)")
 
 func main() {
-	// AppKit requires all UI calls to originate from the main OS thread.
-	// LockOSThread pins this goroutine to the current OS thread for the
-	// lifetime of the process, satisfying that requirement.
 	runtime.LockOSThread()
-
 	flag.Parse()
-
-	if *flagDebug {
-		dbg.Active = true
-		go bleMain()
-		dbg.Run()
-	} else {
-		bleMain()
-	}
+	bleMain()
 }
 
 func bleMain() {
-	defer dbg.Stop()
-
 	util.Log("dBike Go BLE IPC peripheral booting")
 	util.Logf("service=%s write=%s notify=%s", config.ServiceUUID, config.WriteCharUUID, config.NotifyCharUUID)
 
@@ -75,9 +58,8 @@ func bleMain() {
 	}
 
 	nc := ble.NewNotifyCharacteristic()
-	dbg.NotifyChar = nc
 
-	eng, err := script.NewEngine(nc, database, gp, "scripts")
+	eng, err := script.NewEngine(nc, database, gp, config.ScriptsDir)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "script engine:", err)
 		os.Exit(1)

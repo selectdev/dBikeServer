@@ -5,8 +5,8 @@ import (
 	"time"
 )
 
-// DebugWriter, if non-nil, receives every log line in addition to stdout.
-// The debug package sets this via its init() function.
+
+
 var DebugWriter func(string)
 
 func Log(msg string) {

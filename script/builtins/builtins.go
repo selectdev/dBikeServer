@@ -82,6 +82,8 @@ func All() []*tengo.UserFunction {
 		deadBandFunc(),
 		haversineFunc(),
 		formatDurationFunc(),
+		openaiChatFunc(),
+		openaiChatExFunc(),
 	}
 }
 
@@ -92,22 +94,22 @@ func Vars() map[string]any {
 	}
 }
 
-// ToFloat64 converts a Tengo Int or Float to float64. Used by the script package.
+
 func ToFloat64(o tengo.Object) (float64, bool) {
 	return toFloat64(o)
 }
 
-// TengoMapToGo recursively converts a *tengo.Map to map[string]any. Used by the script package.
+
 func TengoMapToGo(m *tengo.Map) map[string]any {
 	return tengoMapToGo(m)
 }
 
-// TengoObjToGo converts a Tengo object to a plain Go value. Used by the script package.
+
 func TengoObjToGo(o tengo.Object) any {
 	return tengoObjToGo(o)
 }
 
-// GoToTengo converts a plain Go value to a Tengo object. Used by the script package.
+
 func GoToTengo(v any) tengo.Object {
 	return goToTengo(v)
 }

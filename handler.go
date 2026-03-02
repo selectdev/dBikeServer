@@ -7,10 +7,6 @@ import (
 	"dbikeserver/util"
 )
 
-// handleFrame processes one decoded BLE frame and dispatches on topic.
-//
-// Tengo scripts (scripts/<topic>.tengo) take priority over the built-in Go
-// switch. Add built-in fallbacks as additional cases in the switch below.
 func handleFrame(nc *ble.NotifyCharacteristic, eng *script.Engine, f ipc.Frame) {
 	if f.Err != nil {
 		util.Logf("failed to decode inbound frame (%d bytes): %v", f.Bytes, f.Err)
@@ -31,7 +27,6 @@ func handleFrame(nc *ble.NotifyCharacteristic, eng *script.Engine, f ipc.Frame) 
 		"rxBytes": f.Bytes,
 	})
 
-	// Tengo scripts override built-in handlers.
 	if eng.HandleEvent(topic, f.Packet.Payload) {
 		return
 	}

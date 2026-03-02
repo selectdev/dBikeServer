@@ -8,9 +8,9 @@ import (
 	"dbikeserver/util"
 )
 
-// LineFramer accumulates incoming BLE chunks and splits on newlines,
-// mirroring the TypeScript LineFramer. The internal buffer is protected
-// by a mutex so concurrent write calls are safe.
+
+
+
 type LineFramer struct {
 	mu  sync.Mutex
 	buf []byte
@@ -20,9 +20,9 @@ func NewLineFramer() *LineFramer {
 	return &LineFramer{}
 }
 
-// Append adds chunk to the internal buffer and returns any complete frames
-// (newline-terminated, with the newline stripped). If the buffer grows
-// beyond MaxFrameBufferBytes without a newline it is reset and nil is returned.
+
+
+
 func (f *LineFramer) Append(chunk []byte) [][]byte {
 	f.mu.Lock()
 	defer f.mu.Unlock()
