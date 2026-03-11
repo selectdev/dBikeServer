@@ -16,7 +16,7 @@ This directory holds reference material for the **dBikeServer** codebase.  The g
 8. [Script Engine](#script-engine)
 9. [Database](#database)
 10. [GPIO Support](#gpio-support)
-11. [Panel & Launcher](#panel--launcher)
+11. [Panel](#panel)
 12. [Utilities](#utilities)
 13. [Scripting Reference](#scripting-reference)
 14. [Extending the Codebase](#extending-the-codebase)
@@ -25,14 +25,13 @@ This directory holds reference material for the **dBikeServer** codebase.  The g
 
 ## Project Overview
 
-dBikeServer is a lightweight Go-based BLE peripheral that exposes a simple IPC (inter‑process communication) protocol over Bluetooth Low Energy.  It is designed to run on Raspberry Pi‑class hardware and is accompanied by a terminal‑based “panel” and a macOS launcher for easy control.  The core features include:
+dBikeServer is a lightweight Go-based BLE peripheral that exposes a simple IPC (inter‑process communication) protocol over Bluetooth Low Energy.  It is designed to run on Raspberry Pi‑class hardware and is accompanied by a terminal‑based “panel” for easy control.  The core features include:
 
 - BLE service with bidirectional messaging
 - Embedded scripting using Tengo for user‑defined handlers
 - Persistent state stored in BadgerDB
 - Optional GPIO access when running on hardware that provides it
 - CLI panel for monitoring and controlling the service
-- macOS launcher that opens the panel in Terminal/iTerm2
 
 The majority of the code is organized into small, focused packages; high‑level logic lives under the `main` package and `handler.go`.
 
@@ -48,7 +47,7 @@ At startup the `main` package initializes the following subsystems in roughly th
 5. **BLE Manager** – a loop in `ble/manager.go` advertises the custom service and recovers from errors.
 6. **Frame Handling** – incoming frames are parsed in `handler.go`; they are acknowledged and dispatched either to a script or to the hard‑coded switch (for topics like `ping`).
 
-The panel and launcher are independent binaries that interact with the running service by inspecting process state and executing the server binary; they live in separate `main` packages under `panel` and `launcher`.
+The panel are independent binaries that interact with the running service by inspecting process state and executing the server binary; they live in separate `main` packages under `panel`.
 
 Communication between components is intentionally kept asynchronous and minimal; most of the complexity lives in the scripting layer and the BLE framing code.
 
@@ -84,7 +83,6 @@ ipc/          # definitions for IPC packets/frames
 script/       # script engine built on Tengo
     builtins/  # helpers exposed to scripts
 panel/        # interactive terminal UI (bubbletea)
-launcher/     # macOS helper for starting the panel
 util/         # logging helpers
 ```
 
@@ -105,12 +103,6 @@ The panel binary is built with:
 
 ```sh
 go build -o dbikeserver-panel ./panel
-```
-
-and the macOS launcher with:
-
-```sh
-go build -o dbikeserver-launcher ./launcher
 ```
 
 A helper script `install.sh` wraps these steps and can also invoke `go get` or `go install` as appropriate; run `./install.sh build` for a quick start.
@@ -189,12 +181,9 @@ GPIO handling is a thin wrapper around `github.com/stianeikeland/go-rpio/v4`.  T
 Scripts access GPIO via helpers like `gpio_output(pin)`, `gpio_read(pin)`, and `gpio_detect(pin, edge)`.
 
 
-## Panel & Launcher
+## Panel
 
 The `panel` subdirectory contains a Bubble Tea–based command‑line user interface.  It shows system statistics, the status of the server process, and lets the user start/stop the service or trigger helper scripts (`install.sh build`, `install.sh upgrade`).  Running `dbikeserver-panel` without arguments displays the UI; the `--watch` flag enables automatic refreshing.
-
-`launcher/main.go` is a macOS‑specific helper that finds the panel binary next to itself, ensures the server is running, and then opens a new Terminal or iTerm2 window/tab with the panel in fullscreen.
-
 
 ## Utilities
 

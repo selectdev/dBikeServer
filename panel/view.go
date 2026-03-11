@@ -9,8 +9,6 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-
-
 var (
 	colAccent   = lipgloss.Color("#00D7FF")
 	colMuted    = lipgloss.Color("#777777")
@@ -43,8 +41,6 @@ var (
 			Bold(true)
 )
 
-
-
 func (m model) View() string {
 	if !m.ready {
 		return "\n" + sAccent.Render("  Loading dBike Server panel…")
@@ -52,7 +48,6 @@ func (m model) View() string {
 
 	w := m.width
 
-	
 	mid := w / 2
 	leftW := mid - 1
 	rightW := w - mid - 1
@@ -60,7 +55,6 @@ func (m model) View() string {
 	leftStr := m.renderLeft(leftW)
 	rightStr := m.renderRight(rightW)
 
-	
 	leftH := strings.Count(leftStr, "\n") + 1
 	rightH := strings.Count(rightStr, "\n") + 1
 	panelH := leftH
@@ -75,8 +69,6 @@ func (m model) View() string {
 
 	panels := lipgloss.JoinHorizontal(lipgloss.Top, leftStr, divStr, rightStr)
 
-	
-	
 	logLines := m.height - panelH - 6
 	if logLines < 0 {
 		logLines = 0
@@ -93,8 +85,6 @@ func (m model) View() string {
 	sections = append(sections, m.renderFooter(w))
 	return strings.Join(sections, "\n")
 }
-
-
 
 func (m model) renderHeader(w int) string {
 	bar := sHeavy.Render(strings.Repeat("━", w))
@@ -114,18 +104,15 @@ func (m model) renderHeader(w int) string {
 	return strings.Join([]string{bar, titleLine, bar}, "\n")
 }
 
-
-
 func (m model) renderLeft(w int) string {
 	s := m.stats
-	cw := w - 1 
+	cw := w - 1
 
 	var b strings.Builder
 	line := func(l string) { b.WriteString(" " + l + "\n") }
 	blank := func() { b.WriteString("\n") }
 	sep := func() { line(sDiv.Render(strings.Repeat("─", cw))) }
 
-	
 	line(sAccent.Render("SERVICE"))
 	sep()
 	line(lrow("Status", statusDot(s.svc.status), 10))
@@ -143,7 +130,6 @@ func (m model) renderLeft(w int) string {
 	}
 	blank()
 
-	
 	line(sAccent.Render("BLUETOOTH"))
 	sep()
 	line(lrow("Device", sWhite.Render(s.bleDevice), 10))
@@ -154,7 +140,6 @@ func (m model) renderLeft(w int) string {
 	line(lrow("Status", statusDot2(s.svc.status == "running", bleLabel), 10))
 	blank()
 
-	
 	line(sAccent.Render("SCRIPTS"))
 	sep()
 	if len(s.scripts) == 0 {
@@ -166,12 +151,9 @@ func (m model) renderLeft(w int) string {
 		}
 	}
 
-	
 	out := strings.TrimRight(b.String(), "\n")
 	return out
 }
-
-
 
 func (m model) renderRight(w int) string {
 	s := m.stats
@@ -182,7 +164,6 @@ func (m model) renderRight(w int) string {
 	blank := func() { b.WriteString("\n") }
 	sep := func() { line(sDiv.Render(strings.Repeat("─", cw))) }
 
-	
 	line(sAccent.Render("SYSTEM"))
 	sep()
 
@@ -213,7 +194,6 @@ func (m model) renderRight(w int) string {
 	}
 	blank()
 
-	
 	line(sAccent.Render("NETWORK"))
 	sep()
 	if len(s.ifaces) == 0 {
@@ -226,7 +206,6 @@ func (m model) renderRight(w int) string {
 	}
 	blank()
 
-	
 	line(sAccent.Render("HARDWARE"))
 	sep()
 	if s.hwModel != "" {
@@ -242,8 +221,6 @@ func (m model) renderRight(w int) string {
 	out := strings.TrimRight(b.String(), "\n")
 	return out
 }
-
-
 
 func (m model) renderLogs(w, maxLines int) string {
 	var b strings.Builder
@@ -263,8 +240,6 @@ func (m model) renderLogs(w, maxLines int) string {
 	}
 	return strings.TrimRight(b.String(), "\n")
 }
-
-
 
 func (m model) renderFooter(w int) string {
 	bar := sHeavy.Render(strings.Repeat("━", w))
@@ -295,13 +270,9 @@ func (m model) renderFooter(w int) string {
 	return strings.Join([]string{bar, footerLine}, "\n")
 }
 
-
-
-
 func lrow(label, value string, labelW int) string {
 	return sLabel.Render(fmt.Sprintf("%-*s", labelW, label)) + "  " + value
 }
-
 
 func metricRow(label string, pct float64, barW int, pctStr, extra string) string {
 	l := sLabel.Render(fmt.Sprintf("%-7s", label))
@@ -309,7 +280,6 @@ func metricRow(label string, pct float64, barW int, pctStr, extra string) string
 	p := sMuted.Render(pctStr)
 	return l + "  " + bar + "  " + p + sMuted.Render(extra)
 }
-
 
 func progressBar(pct float64, width int) string {
 	if pct < 0 {
@@ -336,7 +306,6 @@ func progressBar(pct float64, width int) string {
 	return lipgloss.NewStyle().Foreground(color).Render(bar)
 }
 
-
 func statusDot(status string) string {
 	switch status {
 	case "running":
@@ -355,11 +324,9 @@ func statusDot2(ok bool, label string) string {
 	return sMuted.Render("○ " + label)
 }
 
-
 func keyHint(k string) string {
 	return sKeyHint.Render("[" + k + "]")
 }
-
 
 func trunc(s string, n int) string {
 	if n <= 0 {

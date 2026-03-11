@@ -124,15 +124,6 @@ cmd_build() {
     else
         warn "Panel build failed."
     fi
-
-    info "Building launcher binary…"
-    if [[ "$OS" == "macos" ]]; then
-        if (cd "$SCRIPT_DIR" && go build -o dbikeserver-launcher ./launcher/); then
-            ok "Launcher binary built: ${SCRIPT_DIR}/dbikeserver-launcher"
-        else
-            warn "Launcher build failed."
-        fi
-    fi
 }
 
 ensure_binary() {

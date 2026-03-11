@@ -12,13 +12,6 @@ import (
 	"dbikeserver/util"
 )
 
-
-
-
-
-
-
-
 type NotifyCharacteristic struct {
 	sendCh chan []byte
 }
@@ -29,10 +22,9 @@ func NewNotifyCharacteristic() *NotifyCharacteristic {
 	}
 }
 
-
 func (nc *NotifyCharacteristic) Handler() ble.NotifyHandlerFunc {
 	return func(_ ble.Request, n ble.Notifier) {
-		
+
 		for len(nc.sendCh) > 0 {
 			<-nc.sendCh
 		}
@@ -49,7 +41,7 @@ func (nc *NotifyCharacteristic) Handler() ble.NotifyHandlerFunc {
 				if _, err := n.Write(data); err != nil {
 					util.Logf("notify write error: %v", err)
 				}
-				
+
 				time.Sleep(config.NotifyWriteInterval)
 			case <-n.Context().Done():
 				util.Log("notify unsubscribed")
@@ -59,8 +51,6 @@ func (nc *NotifyCharacteristic) Handler() ble.NotifyHandlerFunc {
 	}
 }
 
-
-
 func (nc *NotifyCharacteristic) Notify(topic string, payload map[string]any) {
 	select {
 	case nc.sendCh <- encodePacket(topic, payload):
@@ -68,8 +58,6 @@ func (nc *NotifyCharacteristic) Notify(topic string, payload map[string]any) {
 		util.Logf("notify dropped: %s (buffer full)", topic)
 	}
 }
-
-
 
 type WriteCharacteristic struct {
 	onFrame func(ipc.Frame)
@@ -82,8 +70,6 @@ func NewWriteCharacteristic(onFrame func(ipc.Frame)) *WriteCharacteristic {
 		framer:  NewLineFramer(),
 	}
 }
-
-
 
 func (wc *WriteCharacteristic) Handler() ble.WriteHandlerFunc {
 	return func(req ble.Request, _ ble.ResponseWriter) {

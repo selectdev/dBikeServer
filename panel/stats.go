@@ -13,13 +13,11 @@ import (
 	"time"
 )
 
-
-
 type svcInfo struct {
-	status   string 
+	status   string
 	pid      int
-	restarts int    
-	uptime   string 
+	restarts int
+	uptime   string
 }
 
 type netIface struct {
@@ -30,37 +28,29 @@ type netIface struct {
 type systemStats struct {
 	collectedAt time.Time
 
-	
 	svc     svcInfo
 	version string
 
-	
 	cpuPct    float64
 	memUsed   uint64
 	memTotal  uint64
 	diskUsed  uint64
 	diskTotal uint64
 
-	
 	ifaces []netIface
 
-	
 	hwModel  string
 	osName   string
 	bootTime string
 
-	
 	bleDevice string
 
-	
 	scripts []string
 
-	
 	logs []string
 }
 
 func gatherStats(scriptDir string) systemStats {
-	
 	type cpuResult struct{ pct float64 }
 	type memResult struct{ used, total uint64 }
 	type diskResult struct{ used, total uint64 }
@@ -86,8 +76,6 @@ func gatherStats(scriptDir string) systemStats {
 	s.cpuPct = r.pct
 	return s
 }
-
-
 
 func cpuPercent() float64 {
 	switch runtime.GOOS {
@@ -155,8 +143,6 @@ func cpuPercentDarwin() float64 {
 	return 0
 }
 
-
-
 func memInfo() (used, total uint64) {
 	switch runtime.GOOS {
 	case "linux":
@@ -221,8 +207,6 @@ func memInfoDarwin() (used, total uint64) {
 	return
 }
 
-
-
 func diskInfo() (used, total uint64) {
 	var stat syscall.Statfs_t
 	if err := syscall.Statfs("/", &stat); err != nil {
@@ -233,8 +217,6 @@ func diskInfo() (used, total uint64) {
 	used = (stat.Blocks - stat.Bfree) * bsize
 	return
 }
-
-
 
 func networkIfaces() []netIface {
 	nets, err := net.Interfaces()
@@ -256,8 +238,6 @@ func networkIfaces() []netIface {
 	return result
 }
 
-
-
 func hwModel() string {
 	switch runtime.GOOS {
 	case "darwin":
@@ -272,6 +252,7 @@ func hwModel() string {
 				return strings.TrimRight(string(data), "\x00\n")
 			}
 		}
+
 		data, _ := os.ReadFile("/proc/cpuinfo")
 		for _, line := range strings.Split(string(data), "\n") {
 			for _, prefix := range []string{"Model name", "Hardware", "Model"} {
@@ -284,6 +265,7 @@ func hwModel() string {
 			}
 		}
 	}
+
 	return runtime.GOARCH
 }
 
@@ -301,9 +283,11 @@ func osVersion() string {
 				}
 			}
 		}
+
 		out, _ := exec.Command("uname", "-sr").Output()
 		return strings.TrimSpace(string(out))
 	}
+
 	return runtime.GOOS
 }
 
@@ -312,7 +296,7 @@ func systemBootTime() string {
 	case "darwin":
 		out, err := exec.Command("sysctl", "-n", "kern.boottime").Output()
 		if err == nil {
-			
+
 			if parts := strings.SplitN(string(out), "}", 2); len(parts) == 2 {
 				return strings.TrimSpace(parts[1])
 			}
@@ -326,10 +310,9 @@ func systemBootTime() string {
 			return boot.Format("2006-01-02 15:04:05")
 		}
 	}
+
 	return "unknown"
 }
-
-
 
 func serviceInfo() svcInfo {
 	switch runtime.GOOS {
@@ -338,6 +321,7 @@ func serviceInfo() svcInfo {
 	case "darwin":
 		return serviceInfoDarwin()
 	}
+
 	return svcInfo{status: "unknown", restarts: -1}
 }
 
@@ -345,10 +329,11 @@ func serviceInfoLinux() svcInfo {
 	out, err := exec.Command("systemctl", "show", "dbikeserver",
 		"--property=ActiveState,MainPID,NRestarts,ActiveEnterTimestamp",
 		"--no-pager").Output()
+
 	if err != nil {
-		
 		return pgrepFallback()
 	}
+
 	var info svcInfo
 	for _, line := range strings.Split(string(out), "\n") {
 		parts := strings.SplitN(line, "=", 2)
@@ -371,7 +356,7 @@ func serviceInfoLinux() svcInfo {
 			info.restarts, _ = strconv.Atoi(parts[1])
 		case "ActiveEnterTimestamp":
 			if parts[1] != "" && parts[1] != "n/a" {
-				
+
 				for _, layout := range []string{
 					"Mon 2006-01-02 15:04:05 MST",
 					"Mon 2006-01-02 15:04:05 UTC",
@@ -384,7 +369,7 @@ func serviceInfoLinux() svcInfo {
 			}
 		}
 	}
-	
+
 	if info.status != "running" {
 		if fb := pgrepFallback(); fb.status == "running" {
 			return fb
@@ -394,14 +379,14 @@ func serviceInfoLinux() svcInfo {
 }
 
 func serviceInfoDarwin() svcInfo {
-	
 	out, err := exec.Command("launchctl", "list", "dbikeserver").Output()
 	info := svcInfo{restarts: -1}
+
 	if err == nil {
 		text := string(out)
 		for _, line := range strings.Split(text, "\n") {
 			line = strings.TrimSpace(line)
-			
+
 			if strings.HasPrefix(line, `"PID"`) {
 				var pid int
 				fmt.Sscanf(line, `"PID" = %d;`, &pid)
@@ -412,7 +397,7 @@ func serviceInfoDarwin() svcInfo {
 			info.status = "running"
 			return info
 		}
-		
+
 		row, _ := exec.Command("sh", "-c",
 			`launchctl list 2>/dev/null | awk '$3=="dbikeserver"'`).Output()
 		fields := strings.Fields(strings.TrimSpace(string(row)))
@@ -424,7 +409,7 @@ func serviceInfoDarwin() svcInfo {
 			return info
 		}
 	}
-	
+
 	if fb := pgrepFallback(); fb.status == "running" {
 		return fb
 	}
@@ -432,24 +417,21 @@ func serviceInfoDarwin() svcInfo {
 	return info
 }
 
-
-
 func pgrepFallback() svcInfo {
 	out, err := exec.Command("pgrep", "-x", "dbikeserver").Output()
 	if err != nil || len(strings.TrimSpace(string(out))) == 0 {
 		return svcInfo{status: "stopped", restarts: -1}
 	}
-	
+
 	first := strings.Fields(strings.TrimSpace(string(out)))[0]
 	pid, _ := strconv.Atoi(first)
 	return svcInfo{status: "running", pid: pid, restarts: -1}
 }
 
-
-
 func recentLogs(scriptDir string, n int) []string {
 	ns := strconv.Itoa(n)
 	var out []byte
+	
 	switch runtime.GOOS {
 	case "linux":
 		out, _ = exec.Command("journalctl", "-u", "dbikeserver",
@@ -470,8 +452,6 @@ func recentLogs(scriptDir string, n int) []string {
 	return lines
 }
 
-
-
 func loadedScripts(scriptDir string) []string {
 	files, err := filepath.Glob(filepath.Join(scriptDir, "scripts", "*.tengo"))
 	if err != nil {
@@ -483,8 +463,6 @@ func loadedScripts(scriptDir string) []string {
 	}
 	return names
 }
-
-
 
 func bleDeviceName() string {
 	if name := os.Getenv("DBIKE_BLE_NAME"); name != "" {
@@ -500,8 +478,6 @@ func buildVersion(scriptDir string) string {
 	}
 	return "dev"
 }
-
-
 
 func formatUptime(d time.Duration) string {
 	d = d.Round(time.Minute)

@@ -5,8 +5,6 @@ import (
 	"time"
 )
 
-
-
 var DebugWriter func(string)
 
 func Log(msg string) {

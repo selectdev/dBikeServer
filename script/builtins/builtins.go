@@ -94,21 +94,17 @@ func Vars() map[string]any {
 	}
 }
 
-
 func ToFloat64(o tengo.Object) (float64, bool) {
 	return toFloat64(o)
 }
-
 
 func TengoMapToGo(m *tengo.Map) map[string]any {
 	return tengoMapToGo(m)
 }
 
-
 func TengoObjToGo(o tengo.Object) any {
 	return tengoObjToGo(o)
 }
-
 
 func GoToTengo(v any) tengo.Object {
 	return goToTengo(v)

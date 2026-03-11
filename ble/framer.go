@@ -8,9 +8,6 @@ import (
 	"dbikeserver/util"
 )
 
-
-
-
 type LineFramer struct {
 	mu  sync.Mutex
 	buf []byte
@@ -19,9 +16,6 @@ type LineFramer struct {
 func NewLineFramer() *LineFramer {
 	return &LineFramer{}
 }
-
-
-
 
 func (f *LineFramer) Append(chunk []byte) [][]byte {
 	f.mu.Lock()

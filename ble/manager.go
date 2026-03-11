@@ -12,10 +12,6 @@ import (
 	"dbikeserver/util"
 )
 
-
-
-
-
 func RunBLEManager(ctx context.Context, nc *NotifyCharacteristic, wc *WriteCharacteristic) error {
 	d, err := darwin.NewDevice()
 	if err != nil {
@@ -23,13 +19,11 @@ func RunBLEManager(ctx context.Context, nc *NotifyCharacteristic, wc *WriteChara
 	}
 	ble.SetDefaultDevice(d)
 
-	
 	svc := ble.NewService(ble.MustParse(config.ServiceUUID))
 
 	writeCh := ble.NewCharacteristic(ble.MustParse(config.WriteCharUUID))
 	writeCh.HandleWrite(wc.Handler())
-	
-	
+
 	writeCh.Property |= ble.CharWriteNR
 
 	notifyCh := ble.NewCharacteristic(ble.MustParse(config.NotifyCharUUID))
@@ -56,7 +50,7 @@ func RunBLEManager(ctx context.Context, nc *NotifyCharacteristic, wc *WriteChara
 		advErr := ble.AdvertiseNameAndServices(ctx, config.DeviceName, serviceUUID)
 
 		if ctx.Err() != nil {
-			return nil 
+			return nil
 		}
 
 		if advErr != nil {

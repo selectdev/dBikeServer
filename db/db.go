@@ -68,7 +68,6 @@ func (d *DB) Delete(key string) error {
 	})
 }
 
-
 func (d *DB) Scan(prefix string) ([][2][]byte, error) {
 	var results [][2][]byte
 	err := d.bdb.View(func(txn *badger.Txn) error {
@@ -90,7 +89,6 @@ func (d *DB) Scan(prefix string) ([][2][]byte, error) {
 	return results, err
 }
 
-
 func (d *DB) ScanKeys(prefix string) ([]string, error) {
 	var keys []string
 	err := d.bdb.View(func(txn *badger.Txn) error {
@@ -106,7 +104,6 @@ func (d *DB) ScanKeys(prefix string) ([]string, error) {
 	})
 	return keys, err
 }
-
 
 func (d *DB) ScanReverse(prefix string, limit int) ([][2][]byte, error) {
 	var results [][2][]byte
